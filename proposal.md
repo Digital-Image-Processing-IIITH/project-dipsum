@@ -30,11 +30,16 @@ SIFT extracts distinctive invariant features from images that can be used to per
 The features are invariant to image scale and rotation, and are shown to provide robust matching across a substantial range of affine distortion, change in 3D viewpoint, addition of noise, and change in illumination. 
 In SIFT, keypoints are identified  initially, a descriptor is computed for each of them. 
 To create a descriptor that is robust to illumination changes and affine distortions.
-Results of the project (What will be done? What is the expected final result ?)
+
+## Results of the project (What will be done? What is the expected final result ?)
 We will develop an algorithm to classify images of beer labels and hence identify the type of beer. 
 Our algorithm will try to find the closest match of the beer type from the dataset. 
 We expect to achieve good results with minimum time and computation requirements. 
 The expected classification accuracy would be above 95%.
+
+## Project Milestones and Expected Timeline
+
+![Project Planning](images/DIP_Project_Planning.png)
 
 ## Is there a dataset you need? How do you plan to get it?
 
@@ -44,9 +49,7 @@ The database will include a variety of breweries, with no more than 5 labels com
 Next, for each database image, a corresponding query (test) image of a beer bottle with that label will be found. 
 These test images will possibly include photographs taken 6 to 12 inches away from the bottle, so that the bottle takes up at least a third of the photo.
 
-## Project Milestones and Expected Timeline
 
-![Project Planning](images/DIP_Project_Planning.png)
 
 ## References
 - Distinctive Image Features from Scale-Invariant Keypoints (https://www.cs.ubc.ca/~lowe/papers/ijcv04.pdf)
