@@ -13,4 +13,4 @@ Note: Change path to the directory and provide a path to `chromedriver`.
 In case of query contact Siddhant Bansal [siddhant.bansal@research.iiit.ac.in](mailto:siddhant.bansal@research.iiit.ac.in).
 
 ## Brewery list
-`brewry_list_siddhant.txt` contains list of breweries from the US starting from alphabets between `T` and `Z`.
+`brewery_lists` contains list of breweries for collecting the data.
