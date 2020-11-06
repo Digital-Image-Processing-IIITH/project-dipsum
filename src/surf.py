@@ -1,5 +1,5 @@
 """
-In this file we experiment with generation of feature descriptors using OpenCV's SIFT implementation
+In this file we experiment with generation of feature descriptors using OpenCV's SURF implementation
 """
 import os
 import cv2
@@ -12,14 +12,14 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--images', default='/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/', help='Path to the folder containing database images')
-parser.add_argument('--descriptors', default='/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/src/lookups/database_sift.pkl', help='Path to the pickle file containing descriptors for database images')
+parser.add_argument('--descriptors', default='/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/src/lookups/database_surf.pkl', help='Path to the pickle file containing descriptors for database images')
 args = parser.parse_args()
 print('[INFO] {}'.format(args))
 
 images = os.listdir(args.images)
 images = [os.path.join(args.images, item) for item in images]
 
-sift = cv2.SIFT_create()
+surf = cv2.xfeatures2d.SURF_create(extended=True)   # For getting descriptor of size 128 instead of 64
 
 if not os.path.exists(args.descriptors):
     print('[INFO] Creating descriptors...')
@@ -27,7 +27,7 @@ if not os.path.exists(args.descriptors):
     for image in tqdm(images, desc='Processing images: '):
         image_gray = cv2.imread(image, 0)
         try:
-            keypoint, descriptor = sift.detectAndCompute(image_gray, None)
+            keypoint, descriptor = surf.detectAndCompute(image_gray, None)
         except Exception as e:
             print(e)
             pdb.set_trace()
