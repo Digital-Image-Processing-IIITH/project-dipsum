@@ -36,6 +36,7 @@ if not os.path.exists(args.descriptors):
     descriptors = dict()
     for image in tqdm(images, desc='Processing images: '):
         image_gray = cv2.imread(image, 0)
+        image_gray = cv2.resize(image_gray,(400,300))
         try:
             keypoint, descriptor = feature_extractor.detectAndCompute(image_gray, None)
         except Exception as e:
