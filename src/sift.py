@@ -1,6 +1,11 @@
 """
 In this file we implement the SIFT algorithm.
 This implementation closely follows OpenCV's implementation
+References:
+1. https://en.wikipedia.org/wiki/Trilinear_interpolation
+2. https://www.wikiwand.com/en/Gaussian_blur
+3. https://medium.com/@russmislam/implementing-sift-in-python-a-complete-guide-part-1-306a99b50aa5
+4. https://medium.com/@russmislam/implementing-sift-in-python-a-complete-guide-part-2-c4350274be2b
 """
 import pdb
 import cv2
@@ -266,6 +271,98 @@ def remove_dup_and_cvt(keypoints):
             unique_kp.append(next_kp)
     return cvt_input_img_size(unique_kp)
 
+def get_descriptors(keypoints, gaus_images, width=4, bins_count=8, scale_times=3, desc_max=0.2, verbose=True):
+    """
+    This method is used for generating the descriptors for each keypoint.
+    """
+    if verbose:
+        print('[INFO] Generating descriptors')
+    desc = []
+    for keypoint in keypoints:
+        row_bin_track = []
+        col_bin_track = []
+        mag_track = []
+        orien_bin_track = []
+        octave = keypoint.octave & 255
+        layer = (keypoint.octave >> 8) & 255
+        if octave >= 128:
+            octave = octave | -128
+        if octave >= 0:
+            scale = 1 / np.float32(1 << octave)
+        else:
+            scale = np.float32(1 << -octave)
+        gaus_image = gaus_images[octave + 1, layer]
+        point = np.round(scale * np.array(keypoint.pt)).astype('int')
+        bins_degree = bins_count / 360.
+        angle = 360. - keypoint.angle
+        cos_angle = np.cos(np.deg2rad(angle))
+        sin_angle = np.sin(np.deg2rad(angle))
+        weight_mul = -0.5 / ((0.5 * width) ** 2)
+        histogram = np.zeros((width + 2, width + 2, bins_count))
+        histogram_width = scale_times * 0.5 * scale * keypoint.size
+        histogram_half_width = int(np.round(histogram_width * np.sqrt(2) * (width + 1) * 0.5))
+        histogram_half_width = int(min(histogram_half_width, np.sqrt(gaus_image.shape[0] ** 2 + gaus_image.shape[1] ** 2)))
+        for row in range(-histogram_half_width, histogram_half_width + 1):
+            for column in range(-histogram_half_width, histogram_half_width + 1):
+                row_rotation = column * sin_angle + row * cos_angle
+                column_rotation = column * cos_angle - row * sin_angle
+                row_bin_loc = (row_rotation / histogram_width) + 0.5 * width - 0.5
+                column_bin_loc = (column_rotation / histogram_width) + 0.5 * width - 0.5
+                if row_bin_loc > -1 and row_bin_loc < width and column_bin_loc > -1 and column_bin_loc < width:
+                    row_window = int(round(point[1] + row))
+                    column_window = int(round(point[0] + column))
+                    if row_window > 0 and row_window < gaus_image.shape[0] - 1 and column_window > 0 and column_window < gaus_image.shape[1] - 1:
+                        dx = gaus_image[row_window, column_window + 1] - gaus_image[row_window, column_window - 1]
+                        dy = gaus_image[row_window - 1, column_window] - gaus_image[row_window + 1, column_window]
+                        grad_mag = np.sqrt(dx * dx + dy * dy)
+                        grad_orient = np.rad2deg(np.arctan2(dy, dx)) % 360
+                        weight = np.exp(weight_mul * ((row_rotation / histogram_width) ** 2 + (column_rotation / histogram_width) ** 2))
+                        row_bin_track.append(row_bin_loc)
+                        col_bin_track.append(column_bin_loc)
+                        mag_track.append(weight * grad_mag)
+                        orien_bin_track.append((grad_orient - angle) * bins_degree)
+        # Smoothing via trilinear interpolation https://en.wikipedia.org/wiki/Trilinear_interpolation
+        for row_bin_loc, column_bin_loc, magnitude, orientation_bin in zip(row_bin_track, col_bin_track, mag_track, orien_bin_track):
+            row_bin_floor, column_bin_floor, orient_bin_floor = np.floor([row_bin_loc, column_bin_loc, orientation_bin]).astype(int)
+            row_fraction, col_fraction, orientation_fraction = row_bin_loc - row_bin_floor, column_bin_loc - column_bin_floor, orientation_bin - orient_bin_floor
+            if orient_bin_floor < 0:
+                orient_bin_floor += bins_count
+            if orient_bin_floor >= bins_count:
+                orient_bin_floor -= bins_count
+            c1 = magnitude * row_fraction
+            c0 = magnitude * (1 - row_fraction)
+            c11 = c1 * col_fraction
+            c10 = c1 * (1 - col_fraction)
+            c01 = c0 * col_fraction
+            c00 = c0 * (1 - col_fraction)
+            c111 = c11 * orientation_fraction
+            c110 = c11 * (1 - orientation_fraction)
+            c101 = c10 * orientation_fraction
+            c100 = c10 * (1 - orientation_fraction)
+            c011 = c01 * orientation_fraction
+            c010 = c01 * (1 - orientation_fraction)
+            c001 = c00 * orientation_fraction
+            c000 = c00 * (1 - orientation_fraction)
+            histogram[row_bin_floor + 1, column_bin_floor + 1, orient_bin_floor] += c000
+            histogram[row_bin_floor + 1, column_bin_floor + 1, (orient_bin_floor + 1) % bins_count] += c001
+            histogram[row_bin_floor + 1, column_bin_floor + 2, orient_bin_floor] += c010
+            histogram[row_bin_floor + 1, column_bin_floor + 2, (orient_bin_floor + 1) % bins_count] += c011
+            histogram[row_bin_floor + 2, column_bin_floor + 1, orient_bin_floor] += c100
+            histogram[row_bin_floor + 2, column_bin_floor + 1, (orient_bin_floor + 1) % bins_count] += c101
+            histogram[row_bin_floor + 2, column_bin_floor + 2, orient_bin_floor] += c110
+            histogram[row_bin_floor + 2, column_bin_floor + 2, (orient_bin_floor + 1) % bins_count] += c111
+        desc_vect = histogram[1:-1, 1:-1, :].flatten()  # Remove histogram borders
+        # Threshold and normalize desc_vect
+        threshold = np.linalg.norm(desc_vect) * desc_max
+        desc_vect[desc_vect > threshold] = threshold
+        desc_vect /= max(np.linalg.norm(desc_vect), 1e-7)
+        # Multiply by 512, round, and saturate between 0 and 255 to convert from float32 to unsigned char (OpenCV convention)
+        desc_vect = np.round(512 * desc_vect)
+        desc_vect[desc_vect < 0] = 0
+        desc_vect[desc_vect > 255] = 255
+        desc.append(desc_vect)
+    return np.array(desc, dtype='float32')
+
 def visualize_pyramid(gaus_images, layer):
     """
     This method is used to visualise a layer from the image pyramid
@@ -296,15 +393,14 @@ def main(image, sigma=1.6, num_intervals=3, initial_assumed_blur=0.5, image_bord
     dog_images = get_DoG_images(gaus_images, verbose=verbose)
     keypoints = get_scale_space_keypoints(gaus_images, dog_images, num_intervals, sigma, image_border_width, verbose=verbose)
     keypoints = remove_dup_and_cvt(keypoints)
-    return keypoints
+    descriptors = get_descriptors(keypoints, gaus_images, verbose=verbose)
+    return keypoints, descriptors
 
 if __name__ == "__main__":
     image = cv2.imread('/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/bira_blonde.jpg')
     image_gray = cv2.imread('/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/bira_blonde.jpg', 0)
-    keypoints = main(image_gray, verbose=True)
+    keypoints, descriptors = main(image_gray, verbose=True)
     img=cv2.drawKeypoints(image_gray,keypoints,image,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     plt.imshow(img, 'gray')
+    plt.xticks([]);plt.yticks([])
     plt.show()
-    # pdb.set_trace()
-    # for i in range(len(dog_images)):
-    #     visualize_pyramid(dog_images, i)
