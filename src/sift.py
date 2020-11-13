@@ -6,6 +6,8 @@ import pdb
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from functools import cmp_to_key
+
 
 def get_base_image(image, sigma, initial_assumed_blur, verbose=True):
     """
@@ -56,7 +58,7 @@ def get_Gaussian_images(image, octaves, kernels, verbose=True):
     if verbose:
         print('[INFO] Preparing Gaussian images')
     images = list()
-    for octave_count in range(octaves):
+    for _ in range(octaves):
         images_in_octave = [image]
         for kernel in kernels[1:]:
             image = cv2.GaussianBlur(image, (0, 0), sigmaX=kernel, sigmaY=kernel)
@@ -116,7 +118,7 @@ def is_extremum(first_section, second_section, third_section, thresh):
             return result
     return False
 
-def localize_quadratic_fit(i, j, img_i, oct_i, num_intervals, dog_imgs_oct, sigma, contrast_threshold, image_border_width, eigen_ratio=10, num_attempts=5, verbose=True):
+def localize_quadratic_fit(i, j, img_i, oct_i, num_intervals, dog_imgs_oct, sigma, contrast_threshold, image_border_width, eigen_ratio=10, num_attempts=5, verbose=False):
     """
     This method is used for fitting a quadratic curve to the extrema obtained using the state space.
     This is an iterative method and uses the extrema's neighbours for fitting the curve.
@@ -127,7 +129,7 @@ def localize_quadratic_fit(i, j, img_i, oct_i, num_intervals, dog_imgs_oct, sigm
     extrema_outside = False
     for attempt in range(num_attempts):
         first, second, third = dog_imgs_oct[img_i-1:img_i+2]
-        cube = np.stack([first[i-1:i+2, j-1:j+2], second[i-1:i+2, j-1:j+2], third[i-1:i+2, j-1:j+2]]).astype('float32')/255 # rescaling pixel values to [0, 1] in the neighbourhood under consideration
+        cube = np.stack([first[i-1:i+2, j-1:j+2], second[i-1:i+2, j-1:j+2], third[i-1:i+2, j-1:j+2]]).astype('float32')/255. # rescaling pixel values to [0, 1] in the neighbourhood under consideration
         grad = get_grad(cube)
         hess = get_hess(cube)
         new_extremum = -np.linalg.lstsq(hess, grad, rcond=None)[0]
@@ -158,9 +160,9 @@ def localize_quadratic_fit(i, j, img_i, oct_i, num_intervals, dog_imgs_oct, sigm
     return None
 
 def get_grad(cube):
-    ds = 0.5 * (cube[1, 2, 1] - cube[1, 0, 1])
+    ds = 0.5 * (cube[2, 1, 1] - cube[0, 1, 1])
     dx = 0.5 * (cube[1, 1, 2] - cube[1, 1, 0])
-    dy = 0.5 * (cube[2, 1, 1] - cube[0, 1, 1])
+    dy = 0.5 * (cube[1, 2, 1] - cube[1, 0, 1])
     return np.array([dx, dy, ds])
 
 def get_hess(cube):
@@ -174,6 +176,96 @@ def get_hess(cube):
     hess = np.array([[dxx, dxy, dxs], [dxy, dyy, dys], [dxs, dys, dss]])
     return hess
 
+def get_keypoint_orientation(keypoint, oct_i, gaus_image, radius_factor=3, bins=36, peak_r=0.8, s_factor=1.5, verbose=False):
+    """
+    This method is used for calculating the orientation for each and every keypoint
+    """
+    if verbose:
+        print('[INFO] Calculating orientations for keypoints')
+    keypoint_orientations = []
+    scale = s_factor * keypoint.size / np.float32(2 ** (oct_i + 1))
+    rad = int(round(radius_factor * scale))
+    weight_factor = -0.5 / (scale ** 2)
+    hist_raw = np.zeros(bins)
+    hist_smooth = np.zeros(bins)
+
+    for i in range(-rad, rad + 1):
+        y_reg = int(round(keypoint.pt[1] / np.float32(2 ** oct_i))) + i
+        if y_reg > 0 and y_reg < gaus_image.shape[0] - 1:
+            for j in range(-rad, rad + 1):
+                x_reg = int(round(keypoint.pt[0] / np.float32(2 ** oct_i))) + j
+                if x_reg > 0 and x_reg < gaus_image.shape[1] - 1:
+                    dx = gaus_image[y_reg, x_reg + 1] - gaus_image[y_reg, x_reg - 1]
+                    dy = gaus_image[y_reg - 1, x_reg] - gaus_image[y_reg + 1, x_reg]
+                    magnitude = np.sqrt(dx * dx + dy * dy)
+                    orient = np.rad2deg(np.arctan2(dy, dx))
+                    weight = np.exp(weight_factor * (i ** 2 + j ** 2))
+                    index = int(round(orient * bins / 360.))
+                    hist_raw[index % bins] += weight * magnitude
+    for n in range(bins):
+        hist_smooth[n] = (6 * hist_raw[n] + 4 * (hist_raw[n - 1] + hist_raw[(n + 1) % bins]) + hist_raw[n - 2] + hist_raw[(n + 2) % bins]) / 16.
+    max_orient = max(hist_smooth)
+    peaks_orient = np.where(np.logical_and(hist_smooth > np.roll(hist_smooth, 1), hist_smooth > np.roll(hist_smooth, -1)))[0]
+    for peak_i in peaks_orient:
+        peak_v = hist_smooth[peak_i]
+        """
+        Interpolation update referred from equation (6.30) in https://ccrma.stanford.edu/~jos/sasp/Quadratic_Interpolation_Spectral_Peaks.html
+        """
+        if peak_v >= peak_r * max_orient:
+            left = hist_smooth[(peak_i - 1) % bins]
+            right = hist_smooth[(peak_i + 1) % bins]
+            interpolated_peak_i = (peak_i + 0.5 * (left - right) / (left - 2 * peak_v + right)) % bins
+            orient = 360. - interpolated_peak_i * 360. / bins
+            if abs(orient - 360.) < 1e-7:
+                orient = 0
+            updated_keypoint = cv2.KeyPoint(*keypoint.pt, keypoint.size, orient, keypoint.response, keypoint.octave)
+            keypoint_orientations.append(updated_keypoint)
+    return keypoint_orientations
+
+def compare_kp(kp1, kp2):
+    """
+    This method returns True is kp1 is less than kp2
+    """
+    if kp1.pt[0] != kp2.pt[0]:
+        return kp1.pt[0] - kp2.pt[0]
+    if kp1.pt[1] != kp2.pt[1]:
+        return kp1.pt[1] - kp2.pt[1]
+    if kp1.size != kp2.size:
+        return kp2.size - kp1.size
+    if kp1.angle != kp2.angle:
+        return kp1.angle - kp2.angle
+    if kp1.response != kp2.response:
+        return kp2.response - kp1.response
+    if kp1.octave != kp2.octave:
+        return kp2.octave - kp1.octave
+    return kp2.class_id - kp1.class_id
+
+def cvt_input_img_size(keypoints):
+    """
+    This method is used to convert properties of keypoint to the input image's size
+    """
+    updated_kp = []
+    for keypoint in keypoints:
+        keypoint.pt = tuple(0.5 * np.array(keypoint.pt))
+        keypoint.size *= 0.5
+        keypoint.octave = (keypoint.octave & ~255) | ((keypoint.octave - 1) & 255)
+        updated_kp.append(keypoint)
+    return updated_kp
+
+def remove_dup_and_cvt(keypoints):
+    """
+    This method is used for sorting keypoints and removing the duplicates
+    """
+    if len(keypoints) < 2:
+        return keypoints
+    keypoints.sort(key=cmp_to_key(compare_kp))
+    unique_kp = [keypoints[0]]
+    for next_kp in keypoints[1:]:
+        unq_last_kp = unique_kp[-1]
+        if unq_last_kp.pt[0] != next_kp.pt[0] or unq_last_kp.pt[1] != next_kp.pt[1] or unq_last_kp.size != next_kp.size or unq_last_kp.angle != next_kp.angle:
+            unique_kp.append(next_kp)
+    return cvt_input_img_size(unique_kp)
+
 def visualize_pyramid(gaus_images, layer):
     """
     This method is used to visualise a layer from the image pyramid
@@ -185,7 +277,7 @@ def visualize_pyramid(gaus_images, layer):
         return None
     for i in range(len(images)):
         fig.add_subplot(2, 3, i + 1)
-        plt.title('{} image'.format(i + 1, layer))
+        plt.title('{} image'.format(i + 1))
         plt.imshow(images[i], 'gray')
         plt.xticks([]);plt.yticks([])
     plt.show()
@@ -200,16 +292,17 @@ def main(image, sigma=1.6, num_intervals=3, initial_assumed_blur=0.5, image_bord
     base_image = get_base_image(image, sigma, initial_assumed_blur, verbose=verbose)
     octaves = get_nos_octaves(base_image.shape)
     kernels = get_Gaussian_kernels(sigma, num_intervals, verbose=verbose)
-    gaus_images = get_Gaussian_images(image, octaves, kernels, verbose=verbose)
+    gaus_images = get_Gaussian_images(base_image, octaves, kernels, verbose=verbose)
     dog_images = get_DoG_images(gaus_images, verbose=verbose)
-    keypoints = get_scale_space_keypoints(gaus_images, dog_images, num_intervals, sigma, image_border_width)
+    keypoints = get_scale_space_keypoints(gaus_images, dog_images, num_intervals, sigma, image_border_width, verbose=verbose)
+    keypoints = remove_dup_and_cvt(keypoints)
     return keypoints
 
 if __name__ == "__main__":
     image = cv2.imread('/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/bira_blonde.jpg')
     image_gray = cv2.imread('/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/bira_blonde.jpg', 0)
     keypoints = main(image_gray, verbose=True)
-    img=cv2.drawKeypoints(image_gray,keypoints,image)
+    img=cv2.drawKeypoints(image_gray,keypoints,image,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     plt.imshow(img, 'gray')
     plt.show()
     # pdb.set_trace()
