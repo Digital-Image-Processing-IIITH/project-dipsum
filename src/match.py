@@ -4,64 +4,56 @@ References: https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials
 """
 import pdb
 import cv2
+import glob
 import sift
 import time
+import pickle
 import argparse
 import numpy as np
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-a', default='flann', help='Algorithm for matching the descriptors. Options are: [flann, bfm]')
+parser.add_argument('-d', default='images/database/*', help='Path to the database images')
+parser.add_argument('-q', default='images/query/*', help='Path to the query image')
 args = parser.parse_args()
 
-assert args.a.lower() in ['flann', 'bfm'], 'Wrong algorithm selected. Options are: [flann, bfm]'
+GOOD_MATCH_THRESH = 10
 
-query = cv2.imread('/Users/aman/3rdSemester/DIP/Project/project-dipsum/images/query/becks.jpeg', 0)
-database = cv2.imread('/Users/aman/3rdSemester/DIP/Project/project-dipsum/images/database/becks.jpg', 0)
+query_images = glob.glob(args.q)
+database_images = glob.glob(args.d)
+feature_extractor = cv2.xfeatures2d.SIFT_create()
+with open('src/lookups/database_sift.pkl', 'rb') as file:
+    database_features = pickle.load(file)
+correct_count = 0
 
-print('[INFO] Generating SIFT features for query image...')
-start = time.time()
-q_key, q_desc = sift.main(query, verbose=False)
-print('[INFO] Time taken in generating features: {} seconds!'.format(np.round(time.time() - start)))
+for query_name in query_images:
+    max_count_name = None
+    max_count = 0
+    for database_name in database_images:
+        database = cv2.imread(database_name, 0)
+        q_desc = database_features[query_name.split('/')[-1].split('.')[0]]
+        d_key, d_desc = sift.main(database, verbose=False)
 
-print('[INFO] Generating SIFT features for database image...')
-start = time.time()
-d_key, d_desc = sift.main(database, verbose=False)
-print('[INFO] Time taken in generating features: {} seconds!'.format(np.round(time.time() - start)))
-
-if args.a.lower() == 'flann':
-    print('[INFO] Matching descriptors using FLANN algorithm...')
-    try:
         FLANN_INDEX_KDTREE = 0
         index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
         search_params = dict(checks = 50)
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(q_desc, d_desc, k=2)
+        matches_ = flann.match(q_desc, d_desc)
         matches_mask = [[0, 0] for i in range(len(matches))]
+        distances = list()
+        counts = list()
         for i, (m, n) in enumerate(matches):
             if m.distance < 0.7 * n.distance:
                 matches_mask[i] = [1, 0]
-        draw_params = dict(matchColor=(0, 255, 0),
-                           singlePointColor=(255, 0, 0),
-                           matchesMask = matches_mask,
-                           flags = 0)
-        output_image = cv2.drawMatchesKnn(query, q_key, database, d_key, matches, None, **draw_params)
-        plt.imshow(output_image)
-        plt.show()
-    except Exception as e:
-        print(e)
-else:
-    print('[INFO] Matching descriptors using Brute-Force matcher...')
-    try:
-        bf = cv2.BFMatcher()
-        matches = bf.knnMatch(q_desc, d_desc, k=2)
-        # Apply ratio test mentioned by Lowe
-        good = []
-        for m, n in matches:
-            if m.distance < 0.75 * n.distance:
-                good.append([m])
-        img3 = cv2.drawMatchesKnn(query, q_key, database, d_key, good, flags=2, outImg=None)
-        plt.imshow(img3),plt.show()
-    except Exception as e:
-        print(e)
-        pdb.set_trace()
+                distances.append(m.distance)
+                counts.append(len(distances))
+        if len(distances) != 0:
+            if np.max(counts) > max_count:
+                max_count = np.max(counts)
+                max_count_name = database_name.split('/')[-1].split('.')[0]
+    print('[INFO] Max count: {} Database Image name: {} Query image name: {}'.format(max_count, max_count_name, query_name))
+    if query_name.split('/')[-1].split('.')[0] == max_count_name:
+        correct_count += 1
+print('[INFO] Correct matches: {} total queries: {} Accuracy: {}'.format(correct_count, len(query_images), correct_count/len(query_images)))
