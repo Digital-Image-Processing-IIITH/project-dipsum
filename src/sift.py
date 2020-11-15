@@ -7,7 +7,6 @@ References:
 3. https://medium.com/@russmislam/implementing-sift-in-python-a-complete-guide-part-1-306a99b50aa5
 4. https://medium.com/@russmislam/implementing-sift-in-python-a-complete-guide-part-2-c4350274be2b
 """
-import pdb
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -380,7 +379,7 @@ def visualize_pyramid(gaus_images, layer):
     plt.show()
     return None
 
-def main(image, sigma=1.6, num_intervals=3, initial_assumed_blur=0.5, image_border_width=5, verbose=True):
+def detectAndCompute(image, sigma=1.6, num_intervals=3, initial_assumed_blur=0.5, image_border_width=5, verbose=False):
     """
     This method is used for generating SIFT keypoints and detectors.
     All the values (sigma, num_intervals, initial_assumed_blur) are used from the paper by Lowe.
@@ -395,12 +394,3 @@ def main(image, sigma=1.6, num_intervals=3, initial_assumed_blur=0.5, image_bord
     keypoints = remove_dup_and_cvt(keypoints)
     descriptors = get_descriptors(keypoints, gaus_images, verbose=verbose)
     return keypoints, descriptors
-
-if __name__ == "__main__":
-    image = cv2.imread('/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/bira_blonde.jpg')
-    image_gray = cv2.imread('/Users/siddhantbansal/Desktop/IIIT-H/Courses/DIP/Project/project-dipsum/images/database/bira_blonde.jpg', 0)
-    keypoints, descriptors = main(image_gray, verbose=True)
-    img=cv2.drawKeypoints(image_gray,keypoints,image,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-    plt.imshow(img, 'gray')
-    plt.xticks([]);plt.yticks([])
-    plt.show()

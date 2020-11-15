@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 import os
 import pickle
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', default='images/samuel_adams/database/', help='Path to the database images')
@@ -30,7 +31,7 @@ if load_descriptor == 'Y' or load_descriptor =='y':
     with open(descriptor_file, 'rb') as file:
         database_descriptors = pickle.load(file)
 else:
-    for image_name in os.listdir(database_images):
+    for image_name in tqdm(os.listdir(database_images)):
         img = cv2.imread(database_images+image_name,0)
         keypoint, descriptor = sift.detectAndCompute(img)
         img_name,img_extension = os.path.splitext(image_name)
@@ -44,7 +45,7 @@ print("--Database Descriptors Loaded--")
 correct_count = 0
 
 
-for query_name in os.listdir(query_images):
+for query_name in tqdm(os.listdir(query_images)):
     max_count_name = None
     max_count = 0
     query = cv2.imread(query_images+query_name, 0)
