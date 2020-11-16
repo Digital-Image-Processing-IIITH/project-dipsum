@@ -55,3 +55,13 @@ OR<br>
 |---|---|---|---|
 | Primary Dataset| 100| 100| 100 |
 |Samuel Adams| 30 | 30 | 100 |
+
+## Visualization
+We have provided a python script to visualize the feature mapping using SIFT. <br>
+`python src/sift_visualization.py` <br>
+It take two arguments: <br>
+`-d` Path to the database image <br>
+`-q` Path to the query image <br>
+
+<img src="images/primary_visual.jpg" height="350"/> <br>
+<img src="images/SamAdams_visual.jpg" height="350"/> <br>
