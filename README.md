@@ -2,15 +2,16 @@
 Please make sure you follow the project [guidelines](./guidelines.md) carefully.
 
 # Dataset
-Use `download_image.sh` for scraping data from the internet.
-
-It uses `google_images_download` library for downloading the data. [Here](https://github.com/hardikvasa/google-images-download) is the link to its GitHub page.
-`google_images_download` needs `chromedriver` for downloading the images.
-[Here](https://chromedriver.chromium.org/downloads) is the link for downloading `chromedriver`.
-
-Note: Change path to the directory and provide a path to `chromedriver`.
-
-In case of query contact Siddhant Bansal [siddhant.bansal@research.iiit.ac.in](mailto:siddhant.bansal@research.iiit.ac.in).
-
-## Brewery list
-`brewery_lists` contains list of breweries for collecting the data.
+The entire dataset is downloaded manually by using Google. Our dataset directory structure is given below:
+```
+images
+  ├── database
+  ├── query
+  ├── samuel_adams
+  | ├── database
+  | ├── query
+```
+* The database folder consists of images having clean labels, while query folder consists of beer bottle images which will be use for matching. 
+* The primary dataset consits of 100 database and corresponding 100 query images.
+* The samuel_adams folder consists of 30 database and corresponding 30 query images for the brewery Samuel Adams
+* Each query image has a corresponding database image.
