@@ -20,6 +20,7 @@ images
 # Setup
 ## Dependencies
 Python = 3.6+
+
 ## Running the code
 
 1. Clone the repo to your local machine. <br>
@@ -63,5 +64,10 @@ It take two arguments: <br>
 `-d` Path to the database image <br>
 `-q` Path to the query image <br>
 
-<img src="images/primary_visual.jpg" height="350"/> <br>
-<img src="images/SamAdams_visual.jpg" height="350"/> <br>
+<img src="images/primary_visual.jpg" height="250"/> <br> <br>
+<img src="images/SamAdams_visual.jpg" height="250"/> <br>
+
+## Effect of Camera Motion
+To study the effect of camera motion, a ipython notebook is provided [CameraMotion.ipynb](src/CameraMotion.ipynb). 
+With the increasing pixels of simulated camera motion, our algorithm shows the following results: <br>
+<img src="images/Motion_result.png" height="250"/>
