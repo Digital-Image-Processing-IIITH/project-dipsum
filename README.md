@@ -17,11 +17,10 @@ images
 * The samuel_adams folder consists of 30 database and corresponding 30 query images for the brewery Samuel Adams
 * Each query image has a corresponding database image. 
 
-# Setup
-## Dependencies
+# Prerequisite
 Python = 3.6+
 
-## Running the code
+# Setup
 
 1. Clone the repo to your local machine. <br>
 `git clone https://github.com/Digital-Image-Processing-IIITH/project-dipsum`
@@ -32,6 +31,13 @@ Python = 3.6+
 4. Create a subfolder for downloading/saving the descriptor file.<br>
 `mkdir lookup`
 
+## Running the demo
+A quick image matching can be done on a single image by: <br>
+1. Download the pre-computed sift descriptors from the given [link](https://drive.google.com/drive/folders/1MpqePCzHbRZHp1CcloUyFzoDXSFT2hkp?usp=sharing) and put them in *lookup* folder. <br>
+2. Run the following command:<br>
+`python src/demo.py -l [Path of the pre computed descriptor file] -q [Path of the query image]`
+
+## Running the code
 There are primarily two methods to execute the project. 
 
 * First one is executing an end-to-end code which will calculate the sift descriptors of the images in *database* folder and then match the *query* images with the *database* sift descriptors. For this run the following command:<br>
@@ -68,6 +74,6 @@ It take two arguments: <br>
 <img src="images/SamAdams_visual.jpg" height="250"/> <br>
 
 ## Effect of Camera Motion
-To study the effect of camera motion, a ipython notebook is provided [CameraMotion.ipynb](src/CameraMotion.ipynb). 
+To study the effect of camera motion, an ipython notebook is provided [CameraMotion.ipynb](src/CameraMotion.ipynb). 
 With the increasing pixels of simulated camera motion, our algorithm shows the following results: <br>
 <img src="images/Motion_result.png" height="250"/>

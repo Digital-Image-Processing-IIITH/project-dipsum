@@ -29,8 +29,8 @@ elif h1>h2:
     hdif = abs(int((h2 - h1) // 2))
     img_q = cv2.copyMakeBorder( img_q, hdif, hdif, 0, 0, cv2.BORDER_CONSTANT)        
 
-img_d_gray = cv2.cvtColor(img_d, cv2.COLOR_RGB2GRAY)
-img_q_gray = cv2.cvtColor(img_q, cv2.COLOR_RGB2GRAY)
+img_d_gray = cv2.imread(database_images,0)  
+img_q_gray = cv2.imread(query_images,0)
 
 #sift = cv2.xfeatures2d.SIFT_create()
 
