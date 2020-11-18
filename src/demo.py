@@ -1,4 +1,4 @@
-import cv2 
+import cv2
 import sift
 import argparse
 import pickle
@@ -12,18 +12,16 @@ args = parser.parse_args()
 GOOD_MATCH_THRESH = 10
 
 descriptor_file = args.l
-query_images = args.q
+query_image = args.q
 
 with open(descriptor_file, 'rb') as file:
     database_descriptors = pickle.load(file)
 
-img_q = cv2.imread(query_images)
-img_q_gray = cv2.imread(query_images,0)
+img_q = cv2.imread(query_image)
+img_q_gray = cv2.imread(query_image,0)
 
-#sift = cv2.xfeatures2d.SIFT_create()
-
-#use sift to get keypoints and descriptors
-keypoints_1, descriptors_1 = sift.detectAndCompute(img_q_gray)
+# using the SIFT algorithm to generate keypoints and descriptors
+keypoints_1, descriptors_1 = sift.detectAndCompute(img_q_gray, verbose=True)
 max_count = 0
 for database_name in database_descriptors.keys():
     d_desc = database_descriptors[database_name]
@@ -42,4 +40,4 @@ for database_name in database_descriptors.keys():
         if np.max(counts) > max_count:
             max_count = np.max(counts)
             max_count_name = database_name.split('/')[-1].split('.')[0]
-print("Label for given query images is: ",max_count_name)
+print("[INFO] Label for {}'s query image  is: {}".format(query_image.split('/')[-1].split('.')[0], max_count_name))

@@ -18,6 +18,7 @@ img_d = cv2.imread(database_images)
 img_q = cv2.imread(query_images)
 img_d = cv2.cvtColor(img_d, cv2.COLOR_BGR2RGB)
 img_q = cv2.cvtColor(img_q, cv2.COLOR_BGR2RGB)
+
 #resizing both images to same shape
 h1, w1 = img_d.shape[:2]
 h2, w2 = img_q.shape[:2]
@@ -32,11 +33,9 @@ elif h1>h2:
 img_d_gray = cv2.imread(database_images,0)  
 img_q_gray = cv2.imread(query_images,0)
 
-#sift = cv2.xfeatures2d.SIFT_create()
-
 #use sift to get keypoints and descriptors
-keypoints_1, descriptors_1 = sift.detectAndCompute(img_d_gray)
-keypoints_2, descriptors_2 = sift.detectAndCompute(img_q_gray)
+keypoints_1, descriptors_1 = sift.detectAndCompute(img_d_gray, verbose=True)
+keypoints_2, descriptors_2 = sift.detectAndCompute(img_q_gray, verbose=True)
 
 FLANN_INDEX_KDTREE = 0
 index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
@@ -44,14 +43,15 @@ search_params = dict(checks = 100)
 flann = cv2.FlannBasedMatcher(index_params, search_params)
 matches = flann.knnMatch(descriptors_1, descriptors_2, k=2)
 distances = []
+# Using the ratio test provided by Lowe in the SIFT paper
 for i, (m, n) in enumerate(matches):
     if m.distance < 0.7 * n.distance:
         distances.append(m)
 
 matches = sorted(distances, key = lambda x:x.distance)
-img3 = cv2.drawMatches(img_d, keypoints_1, img_q, keypoints_2, matches, img_q, flags=2)
-plt.imshow(img3)
+matched_image = cv2.drawMatches(img_d, keypoints_1, img_q, keypoints_2, matches, img_q, flags=2)
+plt.imshow(matched_image)
 plt.show()
-cv2.imwrite("output.jpg",cv2.cvtColor(img3, cv2.COLOR_RGB2BGR))
+# cv2.imwrite("output.jpg",cv2.cvtColor(matched_image, cv2.COLOR_RGB2BGR))
 
 

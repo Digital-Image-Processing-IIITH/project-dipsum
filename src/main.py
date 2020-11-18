@@ -23,8 +23,6 @@ load_descriptor = args.load
 database_descriptors = {}
 name_list = []
 
-#feature_extractor = cv2.xfeatures2d.SIFT_create()
-
 if load_descriptor == 'Y' or load_descriptor =='y':
     print("Loading Pre Computed Descriptors")
     assert os.path.exists(descriptor_file)

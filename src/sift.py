@@ -70,7 +70,7 @@ def get_Gaussian_images(image, octaves, kernels, verbose=True):
         images.append(images_in_octave)
         base = images_in_octave[-3]
         image = cv2.resize(base, (int(base.shape[1]/2), int(base.shape[0]/2)), interpolation=cv2.INTER_NEAREST)
-    return np.array(images)
+    return np.array(images, dtype=object)
 
 def get_DoG_images(gaus_images, verbose=True):
     """
@@ -84,7 +84,7 @@ def get_DoG_images(gaus_images, verbose=True):
         for orig_img, follow_img in zip(octave_images, octave_images[1:]):
             images_octave.append(np.subtract(follow_img, orig_img))
         images.append(images_octave)
-    return np.array(images)
+    return np.array(images, dtype=object)
 
 def get_scale_space_keypoints(gaus_images, dog_images, num_intervals, sigma, image_border_width, contrast_threshold=0.04, verbose=True):
     """
