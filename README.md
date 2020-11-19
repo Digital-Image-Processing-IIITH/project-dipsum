@@ -65,4 +65,7 @@ It take two arguments: <br>
 
 <img src="images/primary_visual.jpg" height="350"/> <br>
 <img src="images/SamAdams_visual.jpg" height="350"/> <br>
+
+## Effect in accuracy due to camera motion
+We simulated the camera motion to check how it effects the accuracy of our model.Below are the results. <br>
 <img src = "images/graph.png" height = "350"/> <br>
