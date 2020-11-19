@@ -14,6 +14,7 @@ Please make sure you follow the project [guidelines](./guidelines.md) carefully.
 - [Results](#Results)
   - [Visualization](#Visualization)
   - [Effect of Camera Motion](#Effect-of-Camera-Motion)
+  - [Effect of Distance](#Effect-of-Distance)
 
 ## Dataset
 The dataset used for this project is created by scraping and manually downloading the images from Bing and Google.<br>
