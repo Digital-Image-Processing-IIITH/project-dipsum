@@ -102,3 +102,11 @@ It takes two arguments: <br>
 To study the effect of camera motion, an ipython notebook is provided [CameraMotion.ipynb](src/CameraMotion.ipynb).
 Here we study how the camera motion affects the SIFT algorithm. The following graph summarizes the results obtained:<br><br>
 <img src="images/graph.png" height="250"/>
+
+### Effect of Distance 
+To study the effect of distance of beer bottle from the camera. 
+Download the pre-computed SIFT descriptors from the given [link](https://drive.google.com/drive/folders/1MpqePCzHbRZHp1CcloUyFzoDXSFT2hkp?usp=sharing) (`distance_sift.pkl`, ~8.1 MB) and save them in the `lookup` folder.
+Run the following command:<br>
+`python src/main.py -d images/distances/database/ -q images/distances/query/ -l lookup/distance_sift.pkl`
+
+<img src="images/distance_visualization.png" height="250"/> <br> <br>
