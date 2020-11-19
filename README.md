@@ -101,4 +101,4 @@ It takes two arguments: <br>
 ### Effect of Camera Motion
 To study the effect of camera motion, an ipython notebook is provided [CameraMotion.ipynb](src/CameraMotion.ipynb).
 Here we study how the camera motion affects the SIFT algorithm. The following graph summarizes the results obtained:<br><br>
-<img src="images/Motion_result.png" height="250"/>
+<img src="images/graph.png" height="250"/>
