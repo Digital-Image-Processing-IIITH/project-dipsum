@@ -1,9 +1,7 @@
 # Beer Label Classification
 
 ## Project
-The task of this project is to replicate the results from the paper titled [Beer Label Classification for Mobile Applications](https://web.stanford.edu/class/ee368/Project_Spring_1415/Reports/Weitz_Chaudhari.pdf). Here, we attempt to automatically identify  beer  types  using  [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform)-based  image matching  of  bottle  labels.
-
-Please make sure you follow the project [guidelines](./guidelines.md) carefully.
+The task of this project is to replicate the results from the paper titled [Beer Label Classification for Mobile Applications](https://web.stanford.edu/class/ee368/Project_Spring_1415/Reports/Weitz_Chaudhari.pdf). Here, we attempt to automatically identify  beer  types  using  [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform)-based  image matching  of  bottle  labels
 
 ## Contents
 - [Dataset](#Dataset)
